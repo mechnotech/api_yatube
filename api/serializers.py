@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Post, User, Comment
+from posts.models import Post, User, Comment
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -19,6 +19,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Comment
         fields = ('text', 'author', 'post')
@@ -31,6 +32,7 @@ class PostSerializer(serializers.ModelSerializer):
         fields = ('id', 'text', 'author', 'image', 'pub_date')
         read_only_fields = ['author']
         serializer_related_field = ['author']
+
 
     def to_representation(self, instance):
         ret = super().to_representation(instance)

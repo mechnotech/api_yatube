@@ -1,4 +1,4 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, permissions
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -20,9 +20,9 @@ class PostViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         user = Token.objects.get(key=request.auth).user
         if user != request.user:
-            return Response(request.data, status=400)
+            return Response(request.data, status=403)
         post = self.serializer_class(data=request.data)
         if post.is_valid():
             post.save(author=user)
-            return Response(request.data, status=201)
-        return Response(request.data, status=400)
+            return Response(post.data, status=201)
+        return Response(post.data, status=400)

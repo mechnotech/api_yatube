@@ -26,6 +26,12 @@ class CommentSerializer(serializers.ModelSerializer):
         read_only_fields = ['author', 'post']
         serializer_related_field = ['author', 'post']
 
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        ret['author'] = instance.author.username
+        return ret
+
+
 class PostSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -33,7 +39,6 @@ class PostSerializer(serializers.ModelSerializer):
         fields = ('id', 'text', 'author', 'image', 'pub_date')
         read_only_fields = ['author']
         serializer_related_field = ['author']
-
 
     def to_representation(self, instance):
         ret = super().to_representation(instance)

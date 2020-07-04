@@ -1,15 +1,9 @@
-from rest_framework import viewsets, status
-from rest_framework.decorators import action
+from rest_framework import status, viewsets
+from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
 
-from posts.models import User, Post, Comment
-from api.serializers import UserSerializer, PostSerializer, CommentSerializer
-from rest_framework.authtoken.models import Token
-
-
-class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
+from api.serializers import CommentSerializer, PostSerializer
+from posts.models import Comment, Post
 
 
 class PostViewSet(viewsets.ModelViewSet):
@@ -18,20 +12,22 @@ class PostViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         user = Token.objects.get(key=request.auth).user
-        if user != request.user:
-            return Response(request.data, status=403)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save(author=user)
         return Response(serializer.data, status=201)
 
     def update(self, request, *args, **kwargs):
-        post = self.queryset.get(pk=kwargs['pk'])
+        post = self.queryset.filter(pk=kwargs['pk']).first()
         if not post:
-            return Response(request.data, status=404)
+            request.error = {'error': 'Такой записи не существует!'}
+            return Response(request.error, status=status.HTTP_404_NOT_FOUND)
+
         user = Token.objects.get(key=request.auth).user
         if user != post.author:
-            return Response(request.data, status=403)
+            request.error = {'error': 'Можно изменять только свой пост!'}
+            return Response(request.error, status=status.HTTP_403_FORBIDDEN)
+
         serializer = self.get_serializer(post,
                                          data=request.data,
                                          partial=kwargs['partial']
@@ -41,25 +37,18 @@ class PostViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     def destroy(self, request, *args, **kwargs):
-        post = self.queryset.get(pk=kwargs['pk'])
+        post = self.queryset.filter(pk=kwargs['pk']).first()
         if not post:
-            return Response(request.data, status=404)
+            request.error = {'error': 'Такой записи не существует!'}
+            return Response(request.error, status=status.HTTP_404_NOT_FOUND)
+
         user = Token.objects.get(key=request.auth).user
         if user != post.author:
-            return Response(request.data, status=403)
+            request.error = {'error': 'Можно удалить только свой пост!'}
+            return Response(request.error, status=status.HTTP_403_FORBIDDEN)
+
         self.perform_destroy(post)
         return Response(status=status.HTTP_204_NO_CONTENT)
-
-    # @action(methods=['get', 'post'], detail=True)
-    # def comments(self, request, *args, **kwargs):
-    #     post = self.queryset.get(pk=kwargs['pk'])
-    #
-    #     if not post:
-    #         return Response(request.data, status=400)
-    #
-    #     comments = Comment.objects.all() #filter(post=post)
-    #     serializer = CommentSerializer(comments)
-    #     return Response(serializer.data, status=200)
 
 
 class CommentViewSet(viewsets.ModelViewSet):
@@ -67,45 +56,55 @@ class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
 
     def list(self, request, *args, **kwargs):
-
         comments = self.queryset.filter(post=kwargs['post_id'])
         serializer = CommentSerializer(comments, many=True)
-        return Response(serializer.data, status=200)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def create(self, request, *args, **kwargs):
-
         user = Token.objects.get(key=request.auth).user
-        if user != request.user:
-            return Response(request.data, status=403)
-        post = Post.objects.get(pk=kwargs['post_id'])
+        post = Post.objects.filter(pk=kwargs['post_id']).first()
         if not post:
-            return Response(request.data, status=404)
+            request.error = {'error': 'Такой записи не существует!'}
+            return Response(request.error, status=status.HTTP_404_NOT_FOUND)
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save(author=user, post=post)
-        return Response(serializer.data, status=201)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def update(self, request, *args, **kwargs):
-        comment = Comment.objects.get(pk=kwargs['pk'])
+
+        comment = Comment.objects.filter(pk=kwargs['pk']).first()
         if not comment:
-            return Response(request.data, status=404)
+            request.error = {'error': 'Такой записи не существует!'}
+            return Response(request.error, status=status.HTTP_404_NOT_FOUND)
+
         user = Token.objects.get(key=request.auth).user
         if user != comment.author:
-            return Response(request.data, status=403)
+            request.error = {'error': 'Можно изменять'
+                                      ' только свой комментарий!'
+                             }
+            return Response(request.error, status=status.HTTP_403_FORBIDDEN)
+
         serializer = self.get_serializer(comment,
                                          data=request.data,
                                          partial=kwargs['partial']
                                          )
         serializer.is_valid(raise_exception=True)
         serializer.save()
+
         return Response(serializer.data)
 
     def destroy(self, request, *args, **kwargs):
         comment = self.queryset.get(pk=kwargs['pk'])
         if not comment:
-            return Response(request.data, status=404)
+            request.error = {'error': 'Такой записи не существует!'}
+            return Response(request.error, status=status.HTTP_404_NOT_FOUND)
+
         user = Token.objects.get(key=request.auth).user
         if user != comment.author:
-            return Response(request.data, status=403)
+            request.error = {'error': 'Можно удалить только свой пост!'}
+            return Response(request.error, status=status.HTTP_403_FORBIDDEN)
+
         self.perform_destroy(comment)
         return Response(status=status.HTTP_204_NO_CONTENT)

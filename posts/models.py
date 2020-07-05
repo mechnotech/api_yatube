@@ -7,13 +7,13 @@ User = get_user_model()
 class Post(models.Model):
     text = models.TextField()
     pub_date = models.DateTimeField(
-        "Дата публикации",
+        'Дата публикации',
         auto_now_add=True,
     )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name="posts",
+        related_name='posts',
     )
     image = models.ImageField(
         upload_to='posts/',
@@ -30,15 +30,15 @@ class Comment(models.Model):
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name="comments",
+        related_name='comments',
     )
     post = models.ForeignKey(
         Post,
         on_delete=models.CASCADE,
-        related_name="comments",
+        related_name='comments',
     )
     created = models.DateTimeField(
-        "Дата добавления",
+        'Дата добавления',
         auto_now_add=True,
         db_index=True,
     )

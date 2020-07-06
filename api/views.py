@@ -16,23 +16,6 @@ class PostViewSet(viewsets.ModelViewSet):
         serializer.save(author=self.request.user)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    def update(self, request, *args, **kwargs):
-        post = get_object_or_404(self.queryset, pk=kwargs.get('pk'))
-        self.check_object_permissions(request, post)
-        serializer = self.get_serializer(post,
-                                         data=request.data,
-                                         partial=kwargs['partial']
-                                         )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data)
-
-    def destroy(self, request, *args, **kwargs):
-        post = get_object_or_404(self.queryset, pk=kwargs.get('pk'))
-        self.check_object_permissions(request, post)
-        self.perform_destroy(post)
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
 
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = None
@@ -48,21 +31,3 @@ class CommentViewSet(viewsets.ModelViewSet):
         post = get_object_or_404(Post, pk=self.kwargs.get('post_id'))
         serializer.save(author=self.request.user, post=post)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def update(self, request, *args, **kwargs):
-        comment = get_object_or_404(self.get_queryset(), pk=kwargs.get('pk'))
-        self.check_object_permissions(request, comment)
-        serializer = self.get_serializer(comment,
-                                         data=request.data,
-                                         partial=kwargs['partial']
-                                         )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def destroy(self, request, *args, **kwargs):
-        comment = get_object_or_404(self.get_queryset(), pk=kwargs.get('pk'))
-        self.check_object_permissions(request, comment)
-        self.perform_destroy(comment)
-        return Response(status=status.HTTP_204_NO_CONTENT)
